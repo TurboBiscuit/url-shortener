@@ -1,0 +1,10 @@
+{
+    "domains": [
+        "put you linked domains here"
+    ],
+    "https": {
+        "enabled": false,
+        "cert": "path to cert file",
+        "key": "path to key file"
+    }
+}
