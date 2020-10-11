@@ -1,0 +1,14 @@
+{
+    "domains": [
+        "pog.rs",
+        "kekw.tv",
+        "pogu.tv",
+        "tyni.cf",
+        "smol.ml"
+    ],
+    "https": {
+        "enabled": false,
+        "cert": "",
+        "key": ""
+    }
+}

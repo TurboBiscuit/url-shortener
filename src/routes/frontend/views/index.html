@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tyni URL</title>
+    <style>
+        /* pog.rs */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            font-family: "Poppins", sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #262626;
+        }
+
+        header {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 3rem;
+        }
+
+        .logo {
+            max-width: 90%;
+            image-rendering: -moz-crisp-edges;
+        }
+
+        .error {
+            background: #a63446;
+            padding: 0.5rem 1rem;
+            color: #7c7c7c;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input,
+        .create {
+            margin: 1rem 0;
+            max-width: 100%;
+        }
+
+        .input {
+            font-family: inherit;
+            padding-bottom: 1rem;
+            background: none;
+            border: none;
+            color: #A4A4A4;
+            border-bottom: 2px solid #ffffff;
+            text-align: center;
+            font-size: 1.25rem;
+            transition: border-bottom-color 0.3s ease-in-out;
+            caret-color: #bc5656;
+        }
+
+        .input:focus {
+            outline: none;
+            border-bottom-color: #bc5656;
+        }
+
+        .input:disabled {
+            color: #262626
+        }
+
+        .input::placeholder {
+            color: #ffffff;
+            opacity: 0.7;
+        }
+
+        .create {
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1.15rem;
+            color: #262626;
+            border: none;
+            background-color: #bc5656;
+            padding: 0.75em 1.25rem;
+            box-shadow: 3px 3px 0 0 #ffffff;
+            transition: box-shadow 0.2s ease-in-out;
+        }
+
+        .create:hover {
+            box-shadow: 0 0 0 0 #ffffff;
+        }
+
+        .created {
+            color: #7c7c7c;
+        }
+
+        .created a {
+            color: inherit;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <center>
+            <h1 class="logo" style="color: #e6e6e6;">
+                Tyni URL
+            </h1>
+            <p :hidden="!shortened" style="color: #e6e6e6;"><br>Your Shortened URL: <a style="color:deepskyblue"
+                    v-text="shortened" :href="shortened"></a><br>
+                <center :hidden="!shortened"><button @click="clearAll" class="create">Make Another</button></center>
+            </p>
+            <form class="form" @submit.prevent="shorten" style="max-width: 500px; width:100%;" :hidden="!!shortened">
+                <input :hidden="!!shortened" class="input" type="url" v-model="url"
+                    placeholder="URL (https://google.com)" style="width:100%;">
+                <br>
+                <div :hidden="!!shortened" style="margin-left: 1px;">
+                    <select :hidden="!!shortened" class="input" v-model="selected_domain" @change="customCode"
+                        style="color: #7c7c7c">
+                        <template v-for="domain in domains">
+                            <option v-text="`${domain.name}`"></option>
+                        </template>
+                    </select>
+                    <input :hidden="!!shortened" class="input" type="text" v-show="selected_has_custom_codes"
+                        placeholder="short code" v-model="code" @input="validateCode">
+                    <button type="submit" class="create">shorten!</button>
+                </div>
+            </form>
+        </center>
+    </div>
+    <script src="/src/js/vue.min.js"></script>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                domains: [],
+                selected_domain: '',
+                url: '',
+                code: '',
+                shortened: false,
+                selected_has_custom_codes: false
+            },
+            created: async () => {
+                var resp = await fetch('/api/v1/domains')
+                app.domains = await resp.json()
+                app.selected_domain = app.domains.map(e => e.name).includes(location.hostname) ? location
+                    .hostname : app.domains[0].name
+                app.customCode()
+            },
+            methods: {
+                customCode() {
+                    app.selected_has_custom_codes = app.domains.find(e => e.name == app.selected_domain)
+                        .custom_codes
+                },
+                validateCode() {
+
+                },
+                clearAll() {
+                    app.url = ''
+                    app.code = ''
+                    app.shortened = false
+                },
+                async shorten() {
+                    var opts = {
+                        url: app.url,
+                        domain: app.selected_domain
+                    }
+                    if (app.selected_has_custom_codes && app.code.length > 0) opts.code = app.code
+                    var resp = await fetch('/api/v1/shorten', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(opts)
+                    })
+                    var json = await resp.json()
+                    if (resp.status !== 200) {
+                        alert(json.message)
+                    } else {
+                        app.shortened =
+                            `http${app.domains.find(e => e.name == json.domain).https?'s':''}://${json.domain}/${json.code}`
+                    }
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>
